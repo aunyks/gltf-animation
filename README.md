@@ -1,6 +1,6 @@
 # gltf-animation
 
-Facilities for loading keyframed animations from glTF files and use them in realtime simulations.
+Facilities for loading keyframed animations from glTF files and using them in realtime simulations.
 
 This project is unlicensed.
 
