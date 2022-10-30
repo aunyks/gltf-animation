@@ -1,0 +1,12 @@
+[package]
+name = "gltf-animation"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# https://github.com/gltf-rs/gltf
+gltf = { version = "1.0" }
+# https://github.com/dimforge/nalgebra
+nalgebra = { version = "0.31.2" }
+# https://github.com/dtolnay/thiserror
+thiserror = { version = "1.0.37" }
