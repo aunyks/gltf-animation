@@ -218,6 +218,7 @@ impl AnimationChannel {
 #[derive(Debug, Clone)]
 pub struct Animation {
     passive_timer: PassiveClock,
+    fps: u32,
     duration: f32,
     target_channels: HashMap<String, HashMap<ChannelType, AnimationChannel>>,
     name: String,
@@ -233,6 +234,7 @@ impl Animation {
             if let Some(anim_name_candidate) = anim.name() {
                 if anim_name_candidate == anim_name {
                     let mut max_channel_duration = 0.0;
+                    let mut max_channel_frames = 0;
 
                     let mut target_channels: HashMap<
                         String,
@@ -255,6 +257,10 @@ impl Animation {
                         // then we don't have a whole recoverable timestamp.
                         if sampler_input_bytes.len() < 4 {
                             continue;
+                        }
+
+                        if sampler_input.count() > max_channel_frames {
+                            max_channel_frames = sampler_input.count();
                         }
 
                         let keyframe_timestamps: Vec<f32> = match channel_sampler.input().data_type() {
@@ -283,7 +289,7 @@ impl Animation {
                         let mut keyframe_properties: Vec<AnimatedProperty> =
                             Vec::with_capacity(keyframe_timestamps.len());
 
-                        let mut channel_type: ChannelType;
+                        let channel_type: ChannelType;
                         match channel.target().property() {
                             GltfProperty::Translation => {
                                 channel_type = ChannelType::Translation;
@@ -378,6 +384,7 @@ impl Animation {
                     return Ok(Self {
                         passive_timer: PassiveClock::default(),
                         target_channels,
+                        fps: (max_channel_frames as f32 / max_channel_duration).round() as u32,
                         duration: max_channel_duration,
                         name: String::from(anim_name),
                     });
@@ -389,6 +396,10 @@ impl Animation {
 
     pub fn duration(&self) -> f32 {
         self.duration
+    }
+
+    pub fn fps(&self) -> u32 {
+        self.fps
     }
 
     pub fn name(&self) -> &String {

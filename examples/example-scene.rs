@@ -6,10 +6,11 @@ fn main() {
     let mut animation = Animation::from_gltf(&gltf, "CubeAction")
         .expect("Animation doesn't exist for given target");
 
-    let frames_per_second = 60.0;
+    let frames_per_second = animation.fps() as f32;
+    dbg!(frames_per_second);
     let delta_seconds = 1.0 / frames_per_second;
 
-    let simulation_duration = 4.0;
+    let simulation_duration = 4.0; // or animation.duration() for whole thing
 
     let item_name = "Cube";
 
