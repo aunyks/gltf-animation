@@ -215,16 +215,16 @@ impl AnimationChannel {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Animation {
+pub struct Animation<'a> {
     passive_timer: PassiveClock,
     fps: u32,
     duration: f32,
     target_channels: HashMap<String, HashMap<ChannelType, AnimationChannel>>,
     name: String,
+    frame_listeners: HashMap<u32, Box<dyn Fn() + 'a>>,
 }
 
-impl Animation {
+impl<'a> Animation<'a> {
     pub fn from_gltf(gltf: &Gltf, anim_name: &str) -> Result<Self, AnimationCreationError> {
         let gltf_bytes = match &gltf.blob {
             Some(bytes) => bytes,
@@ -387,6 +387,7 @@ impl Animation {
                         fps: (max_channel_frames as f32 / max_channel_duration).round() as u32,
                         duration: max_channel_duration,
                         name: String::from(anim_name),
+                        frame_listeners: HashMap::new(),
                     });
                 }
             }
@@ -406,12 +407,33 @@ impl Animation {
         &self.name
     }
 
-    pub fn update(&mut self, delta_seconds: f32) {
-        self.passive_timer.tick(delta_seconds);
-    }
-
     pub fn timeline_position(&self) -> f32 {
         self.passive_timer.elapsed().as_secs_f32()
+    }
+
+    pub fn frame_at_time(&self, timestamp: f32) -> u32 {
+        (timestamp * self.fps() as f32).round() as u32
+    }
+
+    pub fn on_frame(&mut self, frame: u32, listener: impl Fn() + 'a) {
+        self.frame_listeners.insert(frame, Box::new(listener));
+    }
+
+    pub fn update(&mut self, delta_seconds: f32) {
+        let old_frame = self.frame_at_time(self.timeline_position());
+        self.passive_timer.tick(delta_seconds);
+        let new_frame = self.frame_at_time(self.timeline_position());
+
+        for (listener_frame, listener) in self.frame_listeners.iter_mut() {
+            if listener_frame <= &old_frame {
+                continue;
+            }
+            if listener_frame > &new_frame {
+                continue;
+            }
+
+            listener();
+        }
     }
 
     pub fn current_translation(&self, target_name: &str) -> Option<Vector3<f32>> {
